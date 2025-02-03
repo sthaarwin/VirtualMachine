@@ -23,7 +23,8 @@ typedef enum
     CMPGE,
     CMPLE,
     JMP,
-    CJMP,
+    ZJMP,
+    NZJMP,
     HALT
 } VM_Instructions;
 
@@ -53,7 +54,8 @@ typedef struct
 #define DEF_INST_CMPGE {.InstructionType = CMPGE}
 #define DEF_INST_CMPLE {.InstructionType = CMPLE}
 #define DEF_INST_JMP(x) {.InstructionType = JMP, .operand = x}
-#define DEF_INST_CJMP(x) {.InstructionType = CJMP, .operand = x}
+#define DEF_INST_ZJMP(x) {.InstructionType = ZJMP, .operand = x}
+#define DEF_INST_NZJMP(x) {.InstructionType = NZJMP, .operand = x}
 
 typedef struct
 {
@@ -65,7 +67,7 @@ typedef struct
 
 Instruction program[] = {
     DEF_INST_PUSH(0),
-    DEF_INST_JMP(8),
+    DEF_INST_ZJMP(8),
     DEF_INST_PUSH(3),
     DEF_INST_ADD,
     DEF_INST_PUSH(50),
@@ -282,9 +284,24 @@ int main()
             push(machine, a <= b);
             break;
 
-        case CJMP:
+        case ZJMP:
             a = pop(machine);
-            if (a == 1)
+            if (a == 0)
+            {
+                ip = machine->instructions[ip].operand - 1;
+                if (ip + 1 >= machine->program_size)
+                {
+                    fprintf(stderr, "ERROR : cannot jump out of bounds\n");
+                    exit(1);
+                }
+            }
+            else
+                continue;
+            break;
+
+        case NZJMP:
+            a = pop(machine);
+            if (a != 0)
             {
                 ip = machine->instructions[ip].operand - 1;
                 if (ip + 1 >= machine->program_size)
