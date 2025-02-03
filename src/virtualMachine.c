@@ -5,12 +5,14 @@
 
 typedef enum
 {
+    NOP = 0,
     PUSH,
     POP,
     ADD,
     SUB,
     MUL,
     DIV,
+    MOD,
     PRINT,
     DUP,
     SWAP,
@@ -21,6 +23,7 @@ typedef enum
     CMPGE,
     CMPLE,
     JMP,
+    CJMP,
     HALT
 } VM_Instructions;
 
@@ -32,6 +35,7 @@ typedef struct
 
 #define MAX_STACK_SIZE 1024
 
+#define DEF_INST_NOP {.InstructionType = NOP}
 #define DEF_INST_PUSH(x) {.InstructionType = PUSH, .operand = x}
 #define DEF_INST_POP {.InstructionType = POP}
 #define DEF_INST_ADD {.InstructionType = ADD}
@@ -49,6 +53,7 @@ typedef struct
 #define DEF_INST_CMPGE {.InstructionType = CMPGE}
 #define DEF_INST_CMPLE {.InstructionType = CMPLE}
 #define DEF_INST_JMP(x) {.InstructionType = JMP, .operand = x}
+#define DEF_INST_CJMP(x) {.InstructionType = CJMP, .operand = x}
 
 typedef struct
 {
@@ -59,13 +64,17 @@ typedef struct
 } Machine;
 
 Instruction program[] = {
-    DEF_INST_PUSH(4),
+    DEF_INST_PUSH(0),
+    DEF_INST_JMP(8),
     DEF_INST_PUSH(3),
     DEF_INST_ADD,
     DEF_INST_PUSH(50),
     DEF_INST_CMPNE,
     DEF_INST_JMP(6),
     DEF_INST_PUSH(4),
+    DEF_INST_NOP,
+    DEF_INST_PUSH(5),
+    DEF_INST_HALT,
 };
 
 void push(Machine *machine, int value)
@@ -158,6 +167,10 @@ int main()
     {
         switch (machine->instructions[ip].InstructionType)
         {
+        case NOP:
+            continue;
+            break;
+
         case PUSH:
             push(machine, machine->instructions[ip].operand);
             break;
@@ -197,6 +210,17 @@ int main()
                 exit(1);
             }
             push(machine, b / a);
+            break;
+
+        case MOD:
+            a = pop(machine);
+            b = pop(machine);
+            if (a == 0)
+            {
+                fprintf(stderr, "Division by zero\n");
+                exit(1);
+            }
+            push(machine, b % a);
             break;
 
         case DUP:
@@ -258,16 +282,32 @@ int main()
             push(machine, a <= b);
             break;
 
-        case JMP:
+        case CJMP:
             a = pop(machine);
             if (a == 1)
+            {
                 ip = machine->instructions[ip].operand - 1;
+                if (ip + 1 >= machine->program_size)
+                {
+                    fprintf(stderr, "ERROR : cannot jump out of bounds\n");
+                    exit(1);
+                }
+            }
             else
                 continue;
             break;
 
+        case JMP:
+            ip = machine->instructions[ip].operand - 1;
+            if (ip + 1 >= machine->program_size)
+            {
+                fprintf(stderr, "ERROR : cannot jump out of bounds\n");
+                exit(1);
+            }
+            break;
+
         case HALT:
-            printf("HALT\n");
+            ip = machine->program_size;
             break;
 
         default:
