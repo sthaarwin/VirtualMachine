@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "axasmlexer.h"
 
-char *open_file(const char *filepath, int *length)
+char *open_file(char *filepath, int *length)
 {
     FILE *file = fopen(filepath, "r");
     if (!file)
@@ -29,6 +29,24 @@ char *open_file(const char *filepath, int *length)
 
     fclose(file);
     return current;
+}
+
+void push_token(Lexer *lexer, Token value){
+    if(lexer->stack_size >= MAX_TOKEN_STACK_SIZE){
+        fprintf(stderr, "ERROR : stack overflow\n");
+        exit(1);
+    }
+    lexer->token_stack[lexer->stack_size] = value;
+    lexer->stack_size++;
+}
+
+Token pop_token(Lexer *lexer){
+    if(lexer->stack_size <= 0){
+        fprintf(stderr, "ERROR : stack underflow\n");
+        exit(1);
+    }
+    lexer->stack_size--;
+    return lexer->token_stack[lexer->stack_size];
 }
 
 void print_token(Token token)
@@ -186,7 +204,6 @@ Token generate_keyword(const char *current, int *current_index, int line, int ch
     }
     keyword_name[keyword_length] = '\0';
 
-    // Allocate memory for the text field and copy the keyword name
     token.text = (char *)malloc((keyword_length + 1) * sizeof(char));
     strcpy(token.text, keyword_name);
 
@@ -196,8 +213,31 @@ Token generate_keyword(const char *current, int *current_index, int line, int ch
     return token;
 }
 
+Token generate_int(const char *current, int *current_index, int line, int character)
+{
+    Token token;
+    char keyword_name[16];
+    int keyword_length = 0;
+
+    while (isdigit(current[*current_index]))
+    {
+        keyword_name[keyword_length] = current[*current_index];
+        (*current_index)++;
+        keyword_length++;
+    }
+    keyword_name[keyword_length] = '\0';
+
+    token.text = (char *)malloc((keyword_length + 1) * sizeof(char));
+    strcpy(token.text, keyword_name);
+
+    VM_Instructions type = INT;
+    token = init_token(type, token.text, line, character);
+    return token;
+}
+
 int lexer()
 {
+    Lexer lexer = {.file_name = "axasm/test.axasm", .stack_size = 0};
     int length;
     const char *current = open_file("axasm/test.axasm", &length);
     int current_index = 0;
@@ -210,24 +250,33 @@ int lexer()
         if (isalpha(current[current_index]))
         {
             Token token = generate_keyword(current, &current_index, line, character);
+            push_token(&lexer, token);
             current_index--;
-            print_token(token);
+            // print_token(token);
         }
         else if (isdigit(current[current_index]))
         {
-            printf("numeric ");
+            Token token = generate_int(current, &current_index, line, character);
+            push_token(&lexer, token); 
+            current_index--;
+            // print_token(token);
         }
         else if (current[current_index] == '\n')
         {
             line++;
             character = 0;
         }
-        else if(current[current_index == ' ']){
-            character --;
+        else if(current[current_index] == ' '){
+            character--;
         }
         current_index++;
         character++;
     }
     printf("\n");
+
+    for (int i = 0; i < lexer.stack_size; i++)
+    {
+        print_token(lexer.token_stack[i]);
+    }
     return 0;
 }

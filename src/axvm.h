@@ -7,6 +7,7 @@ typedef enum
     NOP = 0,
     PUSH,
     POP,
+    INT,
     ADD,
     SUB,
     MUL,

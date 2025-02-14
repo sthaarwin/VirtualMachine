@@ -1,9 +1,3 @@
-nop nop nop
-push
-pop push
-nop
-push
-pop
-nop
-push
-pop
+push 10
+push 10
+add

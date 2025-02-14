@@ -3,6 +3,7 @@
 
 #include "axvm.h"
 
+#define MAX_TOKEN_STACK_SIZE 1024
 typedef struct{
     VM_Instructions type;
     char *text;
@@ -10,6 +11,12 @@ typedef struct{
     int character;
 }Token;
 
-char *open_file(char *filepath, int *length);
+typedef struct{
+    Token token_stack[MAX_TOKEN_STACK_SIZE];
+    char *file_name;
+    int stack_size;
+}Lexer;
+
+char *open_file( char *filepath, int *length);
 int lexer();
 #endif // AXASMLEXER_H
