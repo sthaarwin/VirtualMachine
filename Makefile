@@ -1,5 +1,5 @@
 all:
-	g++ src/virtualMachine.c -o bin/virtualMachine
+	g++ src/axvm.c src/axasmlexer.c -o bin/axvm
 
 clean:
-	rm output/virtualMachine
+	rm output/axvm 

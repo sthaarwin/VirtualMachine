@@ -2,80 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
-typedef enum
-{
-    NOP = 0,
-    PUSH,
-    POP,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    MOD,
-    PRINT,
-    DUP,
-    SWAP,
-    CMPE,
-    CMPNE,
-    CMPG,
-    CMPL,
-    CMPGE,
-    CMPLE,
-    JMP,
-    ZJMP,
-    NZJMP,
-    HALT
-} VM_Instructions;
-
-typedef struct
-{
-    VM_Instructions InstructionType;
-    int operand;
-} Instruction;
-
-#define MAX_STACK_SIZE 1024
-
-#define DEF_INST_NOP {.InstructionType = NOP}
-#define DEF_INST_PUSH(x) {.InstructionType = PUSH, .operand = x}
-#define DEF_INST_POP {.InstructionType = POP}
-#define DEF_INST_ADD {.InstructionType = ADD}
-#define DEF_INST_SUB {.InstructionType = SUB}
-#define DEF_INST_MUL {.InstructionType = MUL}
-#define DEF_INST_DIV {.InstructionType = DIV}
-#define DEF_INST_PRINT {.InstructionType = PRINT}
-#define DEF_INST_HALT {.InstructionType = HALT}
-#define DEF_INST_DUP {.InstructionType = DUP}
-#define DEF_INST_SWAP {.InstructionType = SWAP}
-#define DEF_INST_CMPE {.InstructionType = CMPE}
-#define DEF_INST_CMPNE {.InstructionType = CMPNE}
-#define DEF_INST_CMPG {.InstructionType = CMPG}
-#define DEF_INST_CMPL {.InstructionType = CMPL}
-#define DEF_INST_CMPGE {.InstructionType = CMPGE}
-#define DEF_INST_CMPLE {.InstructionType = CMPLE}
-#define DEF_INST_JMP(x) {.InstructionType = JMP, .operand = x}
-#define DEF_INST_ZJMP(x) {.InstructionType = ZJMP, .operand = x}
-#define DEF_INST_NZJMP(x) {.InstructionType = NZJMP, .operand = x}
-
-typedef struct
-{
-    int stack[MAX_STACK_SIZE];
-    int stack_size;
-    int program_size;
-    Instruction *instructions;
-} Machine;
+#include "axvm.h"
 
 Instruction program[] = {
-    DEF_INST_PUSH(0),
-    DEF_INST_ZJMP(8),
-    DEF_INST_PUSH(3),
-    DEF_INST_ADD,
-    DEF_INST_PUSH(50),
-    DEF_INST_CMPNE,
-    DEF_INST_JMP(6),
-    DEF_INST_PUSH(4),
-    DEF_INST_NOP,
-    DEF_INST_PUSH(5),
+    DEF_INST_PUSH(10),
+    DEF_INST_PUSH(20),
+    DEF_INST_PUSH(30),
+    DEF_INST_PUSH(40),
+    DEF_INST_INDUP(1),
+    DEF_INST_INSWAP(1),
     DEF_INST_HALT,
 };
 
@@ -107,6 +42,28 @@ int peek(Machine *machine)
         exit(1);
     }
     return machine->stack[machine->stack_size - 1];
+}
+
+void index_dup(Machine *machine, int index)
+{
+    if (index >= machine->stack_size || index < 0)
+    {
+        fprintf(stderr, "Index out of bounds\n");
+        exit(1);
+    }
+    push(machine, machine->stack[index]);
+}
+
+void index_swap(Machine *machine, int index)
+{
+    if (index >= machine->stack_size || index < 0)
+    {
+        fprintf(stderr, "Index out of bounds\n");
+        exit(1);
+    }
+    int temp = machine->stack[index];
+    machine->stack[index] = pop(machine);
+    push(machine, temp);
 }
 
 void print_stack(Machine *machine)
@@ -158,14 +115,11 @@ Machine *read_program_from_file(const char *file_path, int *program_size)
     return machine;
 }
 
-int main()
+void run_instructions(Machine *machine)
 {
     int a, b;
-    write_program_to_file("bin/axzyte.axbin");
-    int program_size;
-    Machine *machine = read_program_from_file("bin/axzyte.axbin", &program_size);
     size_t ip = 0;
-    for (ip = 0; ip < program_size; ip++)
+    for (ip = 0; ip < machine->program_size; ip++)
     {
         switch (machine->instructions[ip].InstructionType)
         {
@@ -229,11 +183,19 @@ int main()
             push(machine, peek(machine));
             break;
 
+        case INDUP:
+            index_dup(machine, machine->instructions[ip].operand);
+            break;
+
         case SWAP:
             a = pop(machine);
             b = pop(machine);
             push(machine, a);
             push(machine, b);
+            break;
+
+        case INSWAP:
+            index_swap(machine, machine->instructions[ip].operand);
             break;
 
         case CMPE:
@@ -331,8 +293,18 @@ int main()
             assert(0 && "Unknown Instruction");
         }
     }
-    print_stack(machine);
-    free(machine->instructions);
-    free(machine);
+}
+
+int main()
+{
+    lexer();
+    int a, b;
+    write_program_to_file("bin/axzyte.axbin");
+    int program_size;
+    Machine *LoadedMachine = read_program_from_file("bin/axzyte.axbin", &program_size);
+    run_instructions(LoadedMachine);
+    print_stack(LoadedMachine);
+    free(LoadedMachine->instructions);
+    free(LoadedMachine);
     return 0;
 }
