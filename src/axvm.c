@@ -303,7 +303,7 @@ int main()
     int program_size;
     Machine *LoadedMachine = read_program_from_file("bin/axzyte.axbin", &program_size);
     run_instructions(LoadedMachine);
-    print_stack(LoadedMachine);
+    // print_stack(LoadedMachine);
     free(LoadedMachine->instructions);
     free(LoadedMachine);
     return 0;

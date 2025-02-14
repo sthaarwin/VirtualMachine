@@ -31,6 +31,11 @@ char *open_file(const char *filepath, int *length)
     return current;
 }
 
+void print_token(Token token)
+{
+    printf("text : %s line : %d character : %d\n", token.text, token.line, token.character);
+}
+
 Token init_token(VM_Instructions type, char *text, int line, int charcter)
 {
     Token token = {.type = type, .text = text, .line = line, .character = charcter};
@@ -39,7 +44,6 @@ Token init_token(VM_Instructions type, char *text, int line, int charcter)
 
 VM_Instructions check_builtin_keywords(char *name)
 {
-    printf("%s\n", name);
     if (strcmp(name, "nop") == 0)
     {
         return NOP;
@@ -54,7 +58,117 @@ VM_Instructions check_builtin_keywords(char *name)
     {
         return POP;
     }
-    return NOP;
+
+    else if (strcmp(name, "add") == 0)
+    {
+        return ADD;
+    }
+
+    else if (strcmp(name, "sub") == 0)
+    {
+        return SUB;
+    }
+
+    else if (strcmp(name, "mul") == 0)
+    {
+        return MUL;
+    }
+
+    else if (strcmp(name, "div") == 0)
+    {
+        return DIV;
+    }
+
+    else if(strcmp(name, "mod") == 0)
+    {
+        return MOD;
+    }
+
+    else if (strcmp(name, "print") == 0)
+    {
+        return PRINT;
+    }
+
+    else if (strcmp(name, "halt") == 0)
+    {
+        return HALT;
+    }
+
+    else if (strcmp(name, "dup") == 0)
+    {
+        return DUP;
+    }
+
+    else if (strcmp(name, "indup") == 0)
+    {
+        return INDUP;
+    }
+
+    else if (strcmp(name, "swap") == 0)
+    {
+        return SWAP;
+    }
+
+    else if (strcmp(name, "inswap") == 0)
+    {
+        return INSWAP;
+    }
+
+    else if (strcmp(name, "cmpe") == 0)
+    {
+        return CMPE;
+    } 
+
+    else if (strcmp(name, "cmpne") == 0)
+    {
+        return CMPNE;
+    }
+
+    else if (strcmp(name, "cmpg") == 0)
+    {
+        return CMPG;
+    }
+
+    else if (strcmp(name, "cmpl") == 0)
+    {
+        return CMPL;
+    }
+
+    else if (strcmp(name, "cmpge") == 0)
+    {
+        return CMPGE;
+    }
+
+    else if (strcmp(name, "cmple") == 0)
+    {
+        return CMPLE;
+    }
+
+    else if (strcmp(name, "jmp") == 0)
+    {
+        return JMP;
+    }
+
+    else if (strcmp(name, "zjmp") == 0)
+    {
+        return ZJMP;
+    }
+
+    else if (strcmp(name, "nzjmp") == 0)
+    {
+        return NZJMP;
+    }
+
+    else if (strcmp(name, "halt") == 0)
+    {
+        return HALT;
+    }
+
+    else
+    {
+        printf("ERROR : unknown keyword %s\n", name);
+        return NONE;
+    }
 }
 
 Token generate_keyword(const char *current, int *current_index, int line, int character)
@@ -70,9 +184,15 @@ Token generate_keyword(const char *current, int *current_index, int line, int ch
         (*current_index)++;
         keyword_length++;
     }
-    keyword_name[keyword_length] = '\0'; 
+    keyword_name[keyword_length] = '\0';
+
+    // Allocate memory for the text field and copy the keyword name
+    token.text = (char *)malloc((keyword_length + 1) * sizeof(char));
+    strcpy(token.text, keyword_name);
+
     VM_Instructions type = check_builtin_keywords(keyword_name);
-    token = init_token(type, keyword_name, line, character);
+    assert(type != NONE && "ERROR : unknown keyword");
+    token = init_token(type, token.text, line, character);
     return token;
 }
 
@@ -82,14 +202,16 @@ int lexer()
     const char *current = open_file("axasm/test.axasm", &length);
     int current_index = 0;
 
-    int line = 0;
-    int character = 0;
+    int line = 1;
+    int character = 1;
 
-    while (current_index <= length)
+    while (current_index < length)
     {
         if (isalpha(current[current_index]))
         {
-            generate_keyword(current, &current_index, line, character);
+            Token token = generate_keyword(current, &current_index, line, character);
+            current_index--;
+            print_token(token);
         }
         else if (isdigit(current[current_index]))
         {
@@ -98,8 +220,13 @@ int lexer()
         else if (current[current_index] == '\n')
         {
             line++;
+            character = 0;
+        }
+        else if(current[current_index == ' ']){
+            character --;
         }
         current_index++;
+        character++;
     }
     printf("\n");
     return 0;

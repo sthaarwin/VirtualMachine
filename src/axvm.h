@@ -3,6 +3,7 @@
 
 typedef enum
 {
+    NONE = -1,
     NOP = 0,
     PUSH,
     POP,
